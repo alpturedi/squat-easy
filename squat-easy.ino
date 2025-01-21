@@ -85,7 +85,37 @@ if(pitch < 70.0){
   Serial.println("OFF");
   analogWrite(tibiaPitch, 0);
 }
+
+
+void vibrationIncrease(){
+  if(x<255){
+     analogWrite(motorPin,x);
+     Serial.println(x);
+     x = x+15;
+  }
+  delay(10);
   
+  if (x > 255) {
+      x = 50;
+  }
+  delay(200);
+} 
+
+void vibrationDecrease(){
+  if(x<255){
+      analogWrite(motorPin,x);
+      Serial.println(x);
+      x = x+15;
+  }
+  delay(10);
+  
+  if (x > 255) {
+      x = 50;
+  }
+  delay(200);
+}
+
+
 }
 
 void loop() {
