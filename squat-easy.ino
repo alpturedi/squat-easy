@@ -8,8 +8,10 @@ sensors_event_t accel;
 sensors_event_t gyro;
 sensors_event_t temp;
 
-const int hipRotation = 10;
-const int tibiaPitch = 11;
+enum MotorPin {
+  SIDE_PIN = 11,
+  FRONT_PIN = 10
+};
 
 void setup(void) {
   Serial.begin(9600);
@@ -31,11 +33,21 @@ void setup(void) {
   mpu_gyro = mpu.getGyroSensor();
   mpu_gyro->printSensorDetails();
 
-  pinMode(tibiaPitch, OUTPUT);
+  pinMode(SIDE_PIN, OUTPUT);
+  pinMode(FRONT_PIN, OUTPUT);
 }
 
-void vibrate(){
-  analogWrite(tibiaPitch, 255); 
+void loop() {
+  showSensorData();
+  delay(1000);
+}
+
+void vibrate(MotorPin motorPin, bool isOn = true) {
+  if (isOn) {
+    // analogWrite(motorPin, 255);
+  } else {
+    analogWrite(motorPin, 0);
+  }
 }
 
 void showSensorData() {
@@ -49,13 +61,13 @@ void showSensorData() {
   // Serial.println(" deg C");
 
   /* Display the results (acceleration is measured in m/s^2) */
-  // Serial.print("Accel X: ");
-  // Serial.print(accel.acceleration.x);
-  // Serial.print(" \tY: ");
-  // Serial.print(accel.acceleration.y);
-  // Serial.print(" \tZ: ");
-  // Serial.print(accel.acceleration.z);
-  // Serial.println(" m/s^2 ");
+  Serial.print("Accel X: ");
+  Serial.print(accel.acceleration.x);
+  Serial.print(" \tY: ");
+  Serial.print(accel.acceleration.y);
+  Serial.print(" \tZ: ");
+  Serial.print(accel.acceleration.z);
+  Serial.println(" m/s^2 ");
 
   /* Display the results (rotation is measured in rad/s) */
   // Serial.print("Gyro X: ");
@@ -67,8 +79,9 @@ void showSensorData() {
   // Serial.println(" radians/s ");
 
   //Calculate roll (rotation around Y) and pitch (rotation around X) and show them
-  roll = atan2(accel.acceleration.y, accel.acceleration.z) * 180.0 / PI;
-  pitch = atan2(-accel.acceleration.x, sqrt(accel.acceleration.y * accel.acceleration.y + accel.acceleration.z * accel.acceleration.z)) * 180.0 / PI;
+  roll = atan2(accel.acceleration.x, accel.acceleration.y) * 180.0 / PI;
+  pitch = atan2(-accel.acceleration.z, sqrt(accel.acceleration.y * accel.acceleration.y + accel.acceleration.x * accel.acceleration.x)) * 180.0 / PI;
+
   //yaw (rotation around Z) is much more complicated to calculate in this way
   Serial.print("Roll: ");
   Serial.print(roll, 1);
@@ -78,47 +91,19 @@ void showSensorData() {
   Serial.println("°");
   Serial.println();
 
-if(pitch < 70.0){
-  Serial.println("ON");
-  analogWrite(tibiaPitch, 255); 
-}else{
-  Serial.println("OFF");
-  analogWrite(tibiaPitch, 0);
-}
-
-
-void vibrationIncrease(){
-  if(x<255){
-     analogWrite(motorPin,x);
-     Serial.println(x);
-     x = x+15;
+  if (abs(pitch) > 15.0) {
+    Serial.println("Front ON");
+    vibrate(FRONT_PIN);
+  } else {
+    Serial.println("Front OFF");
+    vibrate(FRONT_PIN, false);
   }
-  delay(10);
-  
-  if (x > 255) {
-      x = 50;
+
+  if (abs(roll) < 75.0) {
+    Serial.println("Side ON");
+    vibrate(SIDE_PIN);
+  } else {
+    Serial.println("Side OFF");
+    vibrate(SIDE_PIN, false);
   }
-  delay(200);
-} 
-
-void vibrationDecrease(){
-  if(x<255){
-      analogWrite(motorPin,x);
-      Serial.println(x);
-      x = x+15;
-  }
-  delay(10);
-  
-  if (x > 255) {
-      x = 50;
-  }
-  delay(200);
-}
-
-
-}
-
-void loop() {
-  showSensorData();
-  delay(1000);
 }
