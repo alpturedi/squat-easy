@@ -3,14 +3,16 @@
 Adafruit_MPU6050 mpu;
 Adafruit_Sensor *mpu_temp, *mpu_accel, *mpu_gyro;
 
-float pitch, roll;
 sensors_event_t accel;
 sensors_event_t gyro;
 sensors_event_t temp;
 
+const int flexPin = A0;
+
 enum MotorPin {
   SIDE_PIN = 11,
-  FRONT_PIN = 10
+  FRONT_PIN = 10,
+  FLEX_PIN = 9
 };
 
 void setup(void) {
@@ -35,6 +37,7 @@ void setup(void) {
 
   pinMode(SIDE_PIN, OUTPUT);
   pinMode(FRONT_PIN, OUTPUT);
+  pinMode(FLEX_PIN, OUTPUT);
 }
 
 void loop() {
@@ -44,51 +47,36 @@ void loop() {
 
 void vibrate(MotorPin motorPin, bool isOn = true) {
   if (isOn) {
-    // analogWrite(motorPin, 255);
+    analogWrite(motorPin, 255);
   } else {
     analogWrite(motorPin, 0);
   }
 }
 
 void showSensorData() {
+  //Flex read
+  int flex = -1;
+  flex = analogRead(flexPin);
+
   //  /* Get a new normalized sensor event */
   mpu_temp->getEvent(&temp);
   mpu_accel->getEvent(&accel);
-  mpu_gyro->getEvent(&gyro);
-
-  // Serial.print("Temperature ");
-  // Serial.print(temp.temperature);
-  // Serial.println(" deg C");
-
-  /* Display the results (acceleration is measured in m/s^2) */
-  Serial.print("Accel X: ");
-  Serial.print(accel.acceleration.x);
-  Serial.print(" \tY: ");
-  Serial.print(accel.acceleration.y);
-  Serial.print(" \tZ: ");
-  Serial.print(accel.acceleration.z);
-  Serial.println(" m/s^2 ");
-
-  /* Display the results (rotation is measured in rad/s) */
-  // Serial.print("Gyro X: ");
-  // Serial.print(gyro.gyro.x);
-  // Serial.print(" \tY: ");
-  // Serial.print(gyro.gyro.y);
-  // Serial.print(" \tZ: ");
-  // Serial.print(gyro.gyro.z);
-  // Serial.println(" radians/s ");
+  mpu_gyro->getEvent(&gyro);  
 
   //Calculate roll (rotation around Y) and pitch (rotation around X) and show them
-  roll = atan2(accel.acceleration.x, accel.acceleration.y) * 180.0 / PI;
-  pitch = atan2(-accel.acceleration.z, sqrt(accel.acceleration.y * accel.acceleration.y + accel.acceleration.x * accel.acceleration.x)) * 180.0 / PI;
+  float roll = atan2(accel.acceleration.x, accel.acceleration.y) * 180.0 / PI;
+  float pitch = atan2(-accel.acceleration.z, sqrt(accel.acceleration.y * accel.acceleration.y + accel.acceleration.x * accel.acceleration.x)) * 180.0 / PI;
 
   //yaw (rotation around Z) is much more complicated to calculate in this way
+  Serial.println();
   Serial.print("Roll: ");
   Serial.print(roll, 1);
   Serial.println("°");
   Serial.print("Pitch: ");
   Serial.print(pitch, 1);
   Serial.println("°");
+  Serial.print("Flex: ");
+  Serial.print(flex);
   Serial.println();
 
   if (abs(pitch) > 15.0) {
@@ -99,11 +87,19 @@ void showSensorData() {
     vibrate(FRONT_PIN, false);
   }
 
-  if (abs(roll) < 75.0) {
+  if (abs(roll) > 80.0) {
     Serial.println("Side ON");
     vibrate(SIDE_PIN);
   } else {
     Serial.println("Side OFF");
     vibrate(SIDE_PIN, false);
+  }
+
+  if(flex > 700){
+    Serial.println("Flex ON");
+    vibrate(FLEX_PIN);
+  }else{
+    Serial.println("Flex OFF");
+    vibrate(FLEX_PIN, false);
   }
 }
