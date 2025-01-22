@@ -1,5 +1,7 @@
 #include <Adafruit_MPU6050.h>
+#include "Arduino_LED_Matrix.h"
 
+ArduinoLEDMatrix matrix;
 Adafruit_MPU6050 mpu;
 Adafruit_Sensor *mpu_temp, *mpu_accel, *mpu_gyro;
 
@@ -21,10 +23,15 @@ enum Motor {
   FLEX_PIN = 2
 };
 
+byte frame[8][12];
+
 void setup(void) {
   Serial.begin(9600);
+  matrix.begin();
 
-
+  for(int i=0; i<96; i++){
+    frame[0][i] = 0;
+  }
 
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
@@ -50,7 +57,7 @@ void setup(void) {
 
 void turnOn(Motor motor, bool isOn = true) {
   if (isOn) {
-    analogWrite(motorPins[motor], 255);
+    // analogWrite(motorPins[motor], 255);
   } else {
     analogWrite(motorPins[motor], 0);
   }
@@ -58,8 +65,12 @@ void turnOn(Motor motor, bool isOn = true) {
 
 void loop() {
   showSensorData();
+  // System.println(frame);
+  matrix.renderBitmap(frame, 8, 12);
   delay(860);
 }
+
+bool isSquatting = false;
 
 void showSensorData() {
   //Flex read
@@ -92,12 +103,26 @@ void showSensorData() {
   Serial.print(flex);
   Serial.println();
 
+
+  if(pitch > 10){
+    isSquatting = true;
+    Serial.println("Squatting");
+  }else{
+    if(isSquatting){
+      frame[0][squatCount%96] = abs(frame[0][squatCount%96] - 1);
+      squatCount++;
+    }
+    isSquatting=false;
+    Serial.println("Not squatting");
+  }
+
   if (pitch > 25.0) {
     Serial.println("WEIGHT TO YOUR HEELS !");
     turnOn(FRONT_PIN);
   } else {
     turnOn(FRONT_PIN, false);
   }
+
 
   if (pitch > 10.0 && roll < 10.0) {
     Serial.println("KNEES OUT !");
