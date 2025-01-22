@@ -8,15 +8,23 @@ sensors_event_t gyro;
 sensors_event_t temp;
 
 const int flexPin = A0;
+const bool IS_LEFT_KNEE = true;
 
-enum MotorPin {
-  SIDE_PIN = 11,
-  FRONT_PIN = 10,
-  FLEX_PIN = 9
+int squatCount = 0;
+
+// int motorValues[3] = {0,0,0};
+int motorPins[3] = { 11, 10, 9 };
+
+enum Motor {
+  SIDE_PIN = 0,
+  FRONT_PIN = 1,
+  FLEX_PIN = 2
 };
 
 void setup(void) {
   Serial.begin(9600);
+
+
 
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
@@ -35,22 +43,22 @@ void setup(void) {
   mpu_gyro = mpu.getGyroSensor();
   mpu_gyro->printSensorDetails();
 
-  pinMode(SIDE_PIN, OUTPUT);
-  pinMode(FRONT_PIN, OUTPUT);
-  pinMode(FLEX_PIN, OUTPUT);
+  pinMode(motorPins[SIDE_PIN], OUTPUT);
+  pinMode(motorPins[FRONT_PIN], OUTPUT);
+  pinMode(motorPins[FLEX_PIN], OUTPUT);
+}
+
+void turnOn(Motor motor, bool isOn = true) {
+  if (isOn) {
+    analogWrite(motorPins[motor], 255);
+  } else {
+    analogWrite(motorPins[motor], 0);
+  }
 }
 
 void loop() {
   showSensorData();
-  delay(1000);
-}
-
-void vibrate(MotorPin motorPin, bool isOn = true) {
-  if (isOn) {
-    analogWrite(motorPin, 255);
-  } else {
-    analogWrite(motorPin, 0);
-  }
+  delay(860);
 }
 
 void showSensorData() {
@@ -61,45 +69,47 @@ void showSensorData() {
   //  /* Get a new normalized sensor event */
   mpu_temp->getEvent(&temp);
   mpu_accel->getEvent(&accel);
-  mpu_gyro->getEvent(&gyro);  
+  mpu_gyro->getEvent(&gyro);
 
   //Calculate roll (rotation around Y) and pitch (rotation around X) and show them
-  float roll = atan2(accel.acceleration.x, accel.acceleration.y) * 180.0 / PI;
+  float roll = 90 + (atan2(accel.acceleration.x, accel.acceleration.y) * 180.0 / PI);
+
+  if (IS_LEFT_KNEE) {
+    roll *= -1;
+  }
+
   float pitch = atan2(-accel.acceleration.z, sqrt(accel.acceleration.y * accel.acceleration.y + accel.acceleration.x * accel.acceleration.x)) * 180.0 / PI;
 
   //yaw (rotation around Z) is much more complicated to calculate in this way
   Serial.println();
-  Serial.print("Roll: ");
+  Serial.print("Roll to Outside: ");
   Serial.print(roll, 1);
   Serial.println("°");
-  Serial.print("Pitch: ");
+  Serial.print("Prone to Front: ");
   Serial.print(pitch, 1);
   Serial.println("°");
-  Serial.print("Flex: ");
+  Serial.print("Flex on Lumbar: ");
   Serial.print(flex);
   Serial.println();
 
-  if (abs(pitch) > 15.0) {
-    Serial.println("Front ON");
-    vibrate(FRONT_PIN);
+  if (pitch > 25.0) {
+    Serial.println("WEIGHT TO YOUR HEELS !");
+    turnOn(FRONT_PIN);
   } else {
-    Serial.println("Front OFF");
-    vibrate(FRONT_PIN, false);
+    turnOn(FRONT_PIN, false);
   }
 
-  if (abs(roll) > 80.0) {
-    Serial.println("Side ON");
-    vibrate(SIDE_PIN);
+  if (pitch > 10.0 && roll < 10.0) {
+    Serial.println("KNEES OUT !");
+    turnOn(SIDE_PIN);
   } else {
-    Serial.println("Side OFF");
-    vibrate(SIDE_PIN, false);
+    turnOn(SIDE_PIN, false);
   }
 
-  if(flex > 700){
-    Serial.println("Flex ON");
-    vibrate(FLEX_PIN);
-  }else{
-    Serial.println("Flex OFF");
-    vibrate(FLEX_PIN, false);
+  if (flex > 700) {
+    Serial.println("LIFT YOUR CHEST UP !");
+    turnOn(FLEX_PIN);
+  } else {
+    turnOn(FLEX_PIN, false);
   }
 }
