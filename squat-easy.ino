@@ -14,8 +14,7 @@ const bool IS_LEFT_KNEE = true;
 
 int squatCount = 0;
 
-// int motorValues[3] = {0,0,0};
-int motorPins[3] = { 11, 10, 9 };
+int motorPins[3] = { 10, 11, 9 };
 
 enum Motor {
   SIDE_PIN = 0,
@@ -57,7 +56,7 @@ void setup(void) {
 
 void turnOn(Motor motor, bool isOn = true) {
   if (isOn) {
-    // analogWrite(motorPins[motor], 255);
+    analogWrite(motorPins[motor], 255);
   } else {
     analogWrite(motorPins[motor], 0);
   }
@@ -93,6 +92,9 @@ void showSensorData() {
 
   //yaw (rotation around Z) is much more complicated to calculate in this way
   Serial.println();
+  Serial.println();
+  Serial.println();
+  Serial.println();
   Serial.print("Roll to Outside: ");
   Serial.print(roll, 1);
   Serial.println("°");
@@ -104,7 +106,7 @@ void showSensorData() {
   Serial.println();
 
 
-  if(pitch > 10){
+  if(pitch > 20.0){
     isSquatting = true;
     Serial.println("Squatting");
   }else{
@@ -116,7 +118,7 @@ void showSensorData() {
     Serial.println("Not squatting");
   }
 
-  if (pitch > 25.0) {
+  if (pitch > 30.0) {
     Serial.println("WEIGHT TO YOUR HEELS !");
     turnOn(FRONT_PIN);
   } else {
@@ -124,14 +126,14 @@ void showSensorData() {
   }
 
 
-  if (pitch > 10.0 && roll < 10.0) {
+  if (isSquatting && roll < 0.0) {
     Serial.println("KNEES OUT !");
     turnOn(SIDE_PIN);
   } else {
     turnOn(SIDE_PIN, false);
   }
 
-  if (flex > 700) {
+  if (isSquatting && flex > 780) {
     Serial.println("LIFT YOUR CHEST UP !");
     turnOn(FLEX_PIN);
   } else {
