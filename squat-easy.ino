@@ -14,7 +14,7 @@ const bool IS_LEFT_KNEE = true;
 
 int squatCount = 0;
 
-int motorPins[3] = { 10, 11, 9 };
+int motorPins[3] = { 11, 9, 10 };
 
 enum Motor {
   SIDE_PIN = 0,
@@ -133,7 +133,7 @@ void showSensorData() {
     turnOn(SIDE_PIN, false);
   }
 
-  if (isSquatting && flex > 780) {
+  if (isSquatting && flex > 750) {
     Serial.println("LIFT YOUR CHEST UP !");
     turnOn(FLEX_PIN);
   } else {
